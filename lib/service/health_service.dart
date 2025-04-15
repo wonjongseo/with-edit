@@ -63,9 +63,23 @@ class HealthService {
       }
     }
 
-    print('hourlySteps : ${hourlySteps}');
-
     return hourlySteps;
+  }
+
+  Future<void> addDataByType(HealthDataType type, double value) async {
+    try {
+      final now = DateTime.now();
+      final earlier = now.subtract(const Duration(minutes: 20));
+      await health.writeHealthData(
+        value: value,
+        type: type,
+        startTime: earlier,
+        endTime: now,
+        recordingMethod: RecordingMethod.manual,
+      );
+    } catch (e) {
+      print('e.toString() : ${e.toString()}');
+    }
   }
 
   Future<void> addData() async {
@@ -449,21 +463,6 @@ class HealthService {
     health.getHealthConnectSdkStatus();
   }
 
-  /// Gets the Health Connect status on Android.
-  Future<void> getHealthConnectSdkStatus() async {
-    assert(Platform.isAndroid, "This is only available on Android");
-
-    final status = await health.getHealthConnectSdkStatus();
-
-    // setState(() {
-    _contentHealthConnectStatus =
-        'Health Connect Status: ${status?.name.toUpperCase()}';
-    _state = AppState.HEALTH_CONNECT_STATUS;
-    // });
-
-    print('_contentHealthConnectStatus : ${_contentHealthConnectStatus}');
-  }
-
   Future<void> authorize() async {
     try {
       await Permission.activityRecognition.request();
@@ -513,6 +512,80 @@ class HealthService {
           ? dataTypesIOS
           : [];
 
+  Future<List<HealthDataPoint>> fetchDataByType(
+    List<HealthDataType> types,
+  ) async {
+    try {
+      final now = DateTime.now();
+      final start = DateTime(now.year, now.month, 1);
+      // final end = DateTime(now.year, now.month, 3);
+      final end = DateTime(now.year, now.month + 1).subtract(Duration(days: 1));
+      List<HealthDataPoint> healthDatas = await health.getHealthDataFromTypes(
+        types: types,
+        startTime: DateTime(now.year, now.month, now.day + -1),
+        endTime: DateTime(now.year, now.month, now.day + 1),
+        recordingMethodsToFilter: recordingMethodsToFilter,
+      );
+      healthDatas.sort((a, b) => b.dateTo.compareTo(a.dateTo));
+
+      return healthDatas;
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  Future<void> fetchAllData() async {
+    final now = DateTime.now();
+
+    final start = DateTime(now.year, now.month, 1);
+    // final end = DateTime(now.year, now.month, 3);
+    final end = DateTime(now.year, now.month + 1).subtract(Duration(days: 1));
+
+    try {
+      List<HealthDataPoint> healthDatas = await health.getHealthDataFromTypes(
+        types: types,
+        startTime: DateTime(now.year, now.month, now.day + -1),
+        endTime: DateTime(now.year, now.month, now.day + 1),
+        recordingMethodsToFilter: recordingMethodsToFilter,
+      );
+      healthDatas.sort((a, b) => b.dateTo.compareTo(a.dateTo));
+      print('healthDatas.length : ${healthDatas.length}');
+
+      Map<HealthDataType, List<HealthDataPoint>> temp = {};
+      for (var healthData in healthDatas) {
+        HealthDataPoint p = healthData;
+        if (temp[p.type] == null) {
+          temp[p.type] = [];
+        }
+        temp[p.type]!.add(p);
+        if (p.value is AudiogramHealthValue) {
+          print('AudiogramHealthValue');
+        } else if (p.value is WorkoutHealthValue) {
+          print('WorkoutHealthValue');
+        } else if (p.value is NutritionHealthValue) {
+          print('NutritionHealthValue');
+        } else {
+          // print('NumericHealthValue');
+          // print('p.sourceName : ${p.typeString} : ${p.value}');
+        }
+      }
+      print('temp.keys.length : ${temp.keys.length}');
+
+      print(
+        'temp[DIETARY_PROTEIN_CONSUMED] : ${temp[HealthDataType.DIETARY_FATS_CONSUMED]}',
+      );
+
+      //DIETARY_PROTEIN_CONSUMED 단백질
+      // DIETARY_FATS_CONSUMED 총지방
+      //DIETARY_CARBS_CONSUMED  탄수화물
+      temp.keys.forEach((e) {
+        print('e : ${e}');
+      });
+
+      // print('temp : ${temp}');
+    } catch (e) {}
+  }
+
   List<HealthDataAccess> get permissions =>
       types
           .map(
@@ -538,10 +611,8 @@ class HealthService {
 
     // get steps for today (i.e., since midnight)
     final now = DateTime.now();
-    final start = DateTime(now.year, now.month, 1);
     final end = DateTime(now.year, now.month + 1).subtract(Duration(days: 1));
-    print('end.day : ${end.day}');
-    print('start.day : ${start.day}');
+
     bool stepsPermission =
         await health.hasPermissions([HealthDataType.STEPS]) ?? false;
     if (!stepsPermission) {
@@ -568,9 +639,6 @@ class HealthService {
       }
 
       debugPrint('Total number of steps: $steps');
-
-      _nofSteps = (steps == null) ? 0 : steps;
-      _state = (steps == null) ? AppState.NO_DATA : AppState.STEPS_READY;
     }
   }
 }
