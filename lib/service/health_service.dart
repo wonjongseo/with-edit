@@ -1,7 +1,10 @@
 import 'dart:io';
 
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:health/health.dart';
+import 'package:intl/intl.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:with_diet/core/health/health_data_type.dart';
 
@@ -280,6 +283,90 @@ class HealthService {
     _state = success ? AppState.DATA_ADDED : AppState.DATA_NOT_ADDED;
   }
 
+  Future<Map<String, Map<String, dynamic>>> fetchAndStoreHealthData(
+    String userId,
+  ) async {
+    final now = DateTime.now();
+    final thirtyDaysAgo = now.subtract(Duration(days: 2));
+
+    final types = [
+      HealthDataType.STEPS,
+      // HealthDataType.WEIGHT,
+      // HealthDataType.ACTIVE_ENERGY_BURNED,
+    ];
+
+    final data = await health.getHealthDataFromTypes(
+      types: types,
+      startTime: thirtyDaysAgo,
+      endTime: now,
+    );
+    print('data : ${data}');
+
+    if (data.isEmpty) return {};
+
+    // 날짜별로 그룹화
+    // Map<String, Map<String, num>> grouped = {};
+    Map<String, Map<String, dynamic>> grouped = {};
+
+    for (var d in data) {
+      final day = DateFormat('yyyy-MM-dd').format(d.dateFrom);
+
+      num value = (d.value as NumericHealthValue).numericValue;
+
+      grouped.putIfAbsent(day, () => {'steps': {}, 'weight': 0, 'calories': 0});
+
+      switch (d.type) {
+        case HealthDataType.STEPS:
+          final hourKey = DateFormat('yyyy-MM-dd HH').format(d.dateFrom);
+          // grouped[day]!['steps'] = grouped[day]!['steps']! + value;
+
+          grouped[day]!['steps'][hourKey] =
+              (grouped[day]!['steps'][hourKey] ?? 0) + value;
+          // grouped[day]!.putIfAbsent(steps,)
+
+          break;
+        case HealthDataType.WEIGHT:
+          grouped[day]!['weight'] = value; // 최근 것만 저장
+          break;
+        case HealthDataType.ACTIVE_ENERGY_BURNED:
+          grouped[day]!['calories'] = grouped[day]!['calories']! + value;
+          break;
+        default:
+          break;
+      }
+    }
+    // 20-5
+
+    return grouped;
+    // Firestore에 저장
+
+    // final batch = FirebaseFirestore.instance.batch();
+    // final healthRef = FirebaseFirestore.instance
+    //     .collection('users')
+    //     .doc(userId)
+    //     .collection('health_data');
+
+    // final existingDocsSnapshot = await healthRef.get();
+    // final existingDataMap = {
+    //   for (var doc in existingDocsSnapshot.docs) doc.id: doc.data(),
+    // };
+
+    // int addCount = 0;
+    // grouped.forEach((day, values) {
+    //   final existing = existingDataMap[day];
+
+    //   if (existing == null || !mapEquals(existing, values)) {
+    //     addCount++;
+    //     final docRef = healthRef.doc(day);
+    //     batch.set(docRef, values, SetOptions(merge: true));
+    //   }
+    // });
+
+    // await batch.commit();
+
+    // print("✅ 30일치 건강 데이터 중 ${addCount}개가 Firestore에 저장 완료");
+  }
+
   Future<List<HealthDataPoint>> fetchDataType({
     required List<HealthDataType> types,
     DateTime? startTime,
@@ -301,8 +388,6 @@ class HealthService {
 
       return healthData;
     } catch (e) {
-      print('e.toString() : ${e.toString()}');
-
       rethrow;
     }
   }
@@ -453,8 +538,10 @@ class HealthService {
 
     // get steps for today (i.e., since midnight)
     final now = DateTime.now();
-    final midnight = DateTime(now.year, now.month, now.day);
-
+    final start = DateTime(now.year, now.month, 1);
+    final end = DateTime(now.year, now.month + 1).subtract(Duration(days: 1));
+    print('end.day : ${end.day}');
+    print('start.day : ${start.day}');
     bool stepsPermission =
         await health.hasPermissions([HealthDataType.STEPS]) ?? false;
     if (!stepsPermission) {
@@ -462,12 +549,17 @@ class HealthService {
         HealthDataType.STEPS,
       ]);
     }
+    if (!stepsPermission) return;
 
-    if (stepsPermission) {
+    for (var i = 1; i < end.day + 1; i++) {
+      final today = DateTime(now.year, now.month, i);
+
+      final startTime = DateTime(today.year, today.month, today.day, 0);
+      final endTime = DateTime(today.year, today.month, today.day, 23, 59);
       try {
         steps = await health.getTotalStepsInInterval(
-          midnight,
-          now,
+          startTime,
+          endTime,
           includeManualEntry:
               !recordingMethodsToFilter.contains(RecordingMethod.manual),
         );
@@ -479,10 +571,6 @@ class HealthService {
 
       _nofSteps = (steps == null) ? 0 : steps;
       _state = (steps == null) ? AppState.NO_DATA : AppState.STEPS_READY;
-    } else {
-      debugPrint("Authorization not granted - error in authorization");
-      _state = AppState.DATA_NOT_FETCHED;
     }
-    print('_state : ${_state}');
   }
 }

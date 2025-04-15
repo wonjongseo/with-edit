@@ -9,6 +9,20 @@ import 'package:health/health.dart';
 import 'package:with_diet/service/health_service.dart';
 import 'package:with_diet/views/edit_health/edit_health_screen.dart';
 
+class DailyHealthData {
+  final DateTime date;
+  final int steps;
+  final double weight;
+  final int calories;
+
+  DailyHealthData({
+    required this.date,
+    required this.steps,
+    required this.weight,
+    required this.calories,
+  });
+}
+
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
 
@@ -20,6 +34,13 @@ class _HomeScreenState extends State<HomeScreen> {
   HealthService healthService = HealthService();
   List<double> healthValueByTime = List.filled(24, 0.0);
 
+  /**\
+   
+   한달 동안의 걸음수를 하루 씩 확인할 수 있게 ,
+   한달 동안의 몸무게를 하루 씩 확인할 수 있게,
+   한달 동안의 칼로리를 하루 씩 확인할 수 있게
+   */
+
   @override
   void initState() {
     fetchHealthData();
@@ -27,6 +48,18 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   fetchHealthData() async {
+    healthService.fetchStepData();
+    return;
+    var data = await healthService.fetchAndStoreHealthData(
+      "OPOhhHNqdtMutHfIht1ydeau67r1",
+    );
+    var a =
+        data['2025-04-14']!['steps'].values.map((e) {
+          return e;
+        }).toList();
+    print('a : ${a}');
+
+    return;
     List<HealthDataPoint> healths = await healthService.fetchDataType(
       types: [HealthDataType.STEPS, HealthDataType.WEIGHT],
     );
@@ -246,3 +279,6 @@ class HomeListTile extends StatelessWidget {
     );
   }
 }
+
+
+// 14.0+1157.0+1870.0+2249.0+526.0+469.0+794.0+414.0+613.0+771.0+646.0+2127.0+2866.0
