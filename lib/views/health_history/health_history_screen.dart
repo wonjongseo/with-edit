@@ -8,14 +8,19 @@ import 'package:with_diet/core/admob/global_banner_admob.dart';
 import 'package:with_diet/core/enums/home_graph_type.dart';
 import 'package:with_diet/core/widgets/custom_button.dart';
 import 'package:with_diet/service/health_service.dart';
+import 'package:with_diet/views/edit_health_data/edit_health_data_controller.dart';
 import 'package:with_diet/views/edit_health_data/edit_health_data_screen.dart';
 import 'package:with_diet/views/health_history/widgets/task_tile.dart';
 
 class HealthHistoryScreen extends StatefulWidget {
-  const HealthHistoryScreen({super.key, required this.type});
+  const HealthHistoryScreen({
+    super.key,
+    required this.type,
+    required this.dateTime,
+  });
 
   final HomeGraphType type;
-
+  final DateTime dateTime;
   @override
   State<HealthHistoryScreen> createState() => _HealthHistoryScreenState();
 }
@@ -26,6 +31,9 @@ class _HealthHistoryScreenState extends State<HealthHistoryScreen> {
   @override
   void initState() {
     super.initState();
+    print('widget.dateTime : ${widget.dateTime}');
+
+    dateTime = widget.dateTime;
     getHeal();
   }
 
@@ -64,7 +72,15 @@ class _HealthHistoryScreenState extends State<HealthHistoryScreen> {
             CustomButton(
               label: '등록',
               onTap: () {
-                Get.to(() => EditHealthDataScreen(type: widget.type));
+                Get.to(
+                  () => EditHealthDataScreen(),
+                  binding: BindingsBuilder.put(
+                    () => EditHealthDataController(
+                      type: widget.type,
+                      date: dateTime,
+                    ),
+                  ),
+                );
               },
             ),
           ],
@@ -75,7 +91,7 @@ class _HealthHistoryScreenState extends State<HealthHistoryScreen> {
           children: [
             DatePicker(
               dateTime.subtract(Duration(days: 1)),
-              initialSelectedDate: DateTime.now(),
+              initialSelectedDate: dateTime,
               selectionColor: Colors.black,
               selectedTextColor: Colors.white,
               onDateChange: (date) {

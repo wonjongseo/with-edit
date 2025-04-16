@@ -327,8 +327,7 @@ extension HealthDataUnitExtension on HealthDataUnit {
         // TODO: Handle this case.
         throw UnimplementedError();
       case HealthDataUnit.COUNT:
-        // TODO: Handle this case.
-        throw UnimplementedError();
+        return '보';
       case HealthDataUnit.PERCENT:
         // TODO: Handle this case.
         throw UnimplementedError();

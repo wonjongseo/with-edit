@@ -14,16 +14,16 @@ import 'package:with_diet/core/widgets/custom_text_form_field.dart';
 import 'package:with_diet/views/edit_health_data/edit_health_data_controller.dart';
 
 class EditHealthDataScreen extends StatelessWidget {
-  const EditHealthDataScreen({super.key, this.type});
+  const EditHealthDataScreen({super.key});
 
-  final HomeGraphType? type;
   @override
   Widget build(BuildContext context) {
     final GlobalKey dropdownKey = GlobalKey();
     final GlobalKey dropdownKey2 = GlobalKey();
-    EditHealthDataController controller = Get.put(
-      EditHealthDataController(type: type),
-    );
+    EditHealthDataController controller = Get.find<EditHealthDataController>();
+    // EditHealthDataController controller = Get.put(
+    //   EditHealthDataController(type: type),
+    // );
     Size size = MediaQuery.of(context).size;
     return GestureDetector(
       onTap: () {

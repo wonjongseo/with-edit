@@ -47,16 +47,16 @@ class DataController extends GetxController {
 
   HealthDayData? currentHealthDate;
   HealthDayData? yesterdayHealthDate;
-  DateTime now = DateTime.now();
+  DateTime selectedDay = DateTime.now();
 
   void handleDay(HandleDayType type) {
     switch (type) {
       case HandleDayType.go:
-        now = now.add(Duration(days: 1));
+        selectedDay = selectedDay.add(Duration(days: 1));
       case HandleDayType.back:
-        now = now.subtract(Duration(days: 1));
+        selectedDay = selectedDay.subtract(Duration(days: 1));
       case HandleDayType.today:
-        now = DateTime.now();
+        selectedDay = DateTime.now();
     }
 
     getTodayAndYesterHealthData();
@@ -71,11 +71,12 @@ class DataController extends GetxController {
   }
 
   void getTodayAndYesterHealthData() {
-    currentHealthDate = healthDayDate[DateFormat('yyyy-MM-dd').format(now)];
+    currentHealthDate =
+        healthDayDate[DateFormat('yyyy-MM-dd').format(selectedDay)];
     yesterdayHealthDate =
         healthDayDate[DateFormat(
           'yyyy-MM-dd',
-        ).format(now.subtract(Duration(days: 1)))];
+        ).format(selectedDay.subtract(Duration(days: 1)))];
   }
 
   void loadHealthData() async {

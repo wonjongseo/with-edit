@@ -14,6 +14,7 @@ import 'package:with_diet/core/enums/home_graph_type.dart';
 
 import 'package:with_diet/service/health_service.dart';
 import 'package:with_diet/views/edit_health/edit_health_screen.dart';
+import 'package:with_diet/views/edit_health_data/edit_health_data_controller.dart';
 import 'package:with_diet/views/edit_health_data/edit_health_data_screen.dart';
 import 'package:with_diet/views/health_history/health_history_screen.dart';
 import 'package:with_diet/views/home/widgets/home_line_chart.dart';
@@ -119,7 +120,12 @@ class HomeScreen extends StatelessWidget {
                           ),
                           IconButton(
                             onPressed: () {
-                              Get.to(() => EditHealthDataScreen());
+                              Get.to(
+                                () => EditHealthDataScreen(),
+                                binding: BindingsBuilder.put(
+                                  () => EditHealthDataController(),
+                                ),
+                              );
                             },
                             icon: Icon(FontAwesomeIcons.add),
                           ),
@@ -151,7 +157,7 @@ class HomeScreen extends StatelessWidget {
                         child: Text(
                           DateFormat.yMEd(
                             Get.locale.toString(),
-                          ).format(dataController.now),
+                          ).format(dataController.selectedDay),
                           style: TextStyle(fontSize: 16, color: Colors.black54),
                         ),
                       ),
@@ -175,7 +181,14 @@ class HomeScreen extends StatelessWidget {
                         return Column(
                           children: [
                             HomeListTile(
-                              onTap: () {},
+                              onTap: () {
+                                Get.to(
+                                  () => HealthHistoryScreen(
+                                    type: HomeGraphType.step,
+                                    dateTime: dataController.selectedDay,
+                                  ),
+                                );
+                              },
                               title: "걸음 수",
                               todayValue:
                                   dataController.currentHealthDate?.steps,
@@ -191,6 +204,7 @@ class HomeScreen extends StatelessWidget {
                                 Get.to(
                                   () => HealthHistoryScreen(
                                     type: HomeGraphType.calory,
+                                    dateTime: dataController.selectedDay,
                                   ),
                                 );
                               },
@@ -212,6 +226,7 @@ class HomeScreen extends StatelessWidget {
                                 Get.to(
                                   () => HealthHistoryScreen(
                                     type: HomeGraphType.weight,
+                                    dateTime: dataController.selectedDay,
                                   ),
                                 );
                               },

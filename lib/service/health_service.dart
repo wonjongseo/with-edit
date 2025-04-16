@@ -391,16 +391,15 @@ class HealthService {
     DateTime? endTime,
   }) async {
     try {
-      final now = DateTime.now().subtract(Duration(days: 1));
-      final sstartTime = startTime ?? DateTime(now.year, now.month, now.day, 0);
+      final now = endTime ?? DateTime.now();
 
-      final eendTime = endTime ?? now.add(const Duration(hours: 24));
+      final thirtyDaysAgo = now.subtract(Duration(days: 30));
 
       List<HealthDataPoint> healthData = await health.getHealthDataFromTypes(
         types: types,
-        startTime: sstartTime,
-        endTime: eendTime,
-        recordingMethodsToFilter: recordingMethodsToFilter,
+        startTime: thirtyDaysAgo,
+        endTime: now,
+        // recordingMethodsToFilter: recordingMethodsToFilter,
       );
       healthData.sort((a, b) => b.dateTo.compareTo(a.dateTo));
 

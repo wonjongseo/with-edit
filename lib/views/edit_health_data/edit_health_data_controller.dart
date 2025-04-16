@@ -9,14 +9,30 @@ import 'package:with_diet/core/utils/app_snackbar.dart';
 import 'package:with_diet/service/health_service.dart';
 
 class EditHealthDataController extends GetxController {
-  EditHealthDataController({HomeGraphType? type}) : selectedHealthType = type;
+  EditHealthDataController({
+    HomeGraphType? type,
+    DateTime? date,
+    this.healthDataPoint,
+  }) : selectedHealthType = type,
+       selectedDateTime = date ?? DateTime.now();
 
+  @override
+  void onInit() {
+    if (healthDataPoint != null) {
+      setHealthDataPoint();
+    }
+    super.onInit();
+  }
+
+  void setHealthDataPoint() {}
+
+  HealthDataPoint? healthDataPoint;
   HealthService _healthService = HealthService();
   DataController _dataController = Get.find<DataController>();
 
   TextEditingController teCtl = TextEditingController();
 
-  DateTime selectedDateTime = DateTime.now();
+  DateTime selectedDateTime;
 
   HomeGraphType? selectedHealthType;
   CaloryType? selectedCaloryType;
