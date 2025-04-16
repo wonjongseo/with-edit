@@ -93,10 +93,10 @@ class _AddHealthDataWidetState extends State<AddHealthDataWidet> {
             children: [
               ElevatedButton(
                 onPressed: () {
-                  healthService.addDataByType(
-                    selectedIndex!,
-                    double.parse(teCtl.text),
-                  );
+                  // healthService.addDataByType(
+                  //   selectedIndex!,
+                  //   double.parse(teCtl.text),
+                  // );
                 },
                 child: Text('등록'),
               ),

@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:health/health.dart';
 import 'package:intl/intl.dart';
 import 'package:permission_handler/permission_handler.dart';
+import 'package:with_diet/controller/data_controller.dart';
 import 'package:with_diet/core/health/health_data_type.dart';
 
 enum AppState {
@@ -66,15 +67,18 @@ class HealthService {
     return hourlySteps;
   }
 
-  Future<void> addDataByType(HealthDataType type, double value) async {
+  Future<void> addDataByType({
+    required HealthDataType type,
+    required double value,
+    required DateTime date,
+  }) async {
     try {
-      final now = DateTime.now();
-      final earlier = now.subtract(const Duration(minutes: 20));
+      final earlier = date.subtract(const Duration(minutes: 1));
       await health.writeHealthData(
         value: value,
         type: type,
         startTime: earlier,
-        endTime: now,
+        endTime: date,
         recordingMethod: RecordingMethod.manual,
       );
     } catch (e) {
@@ -606,12 +610,13 @@ class HealthService {
   int _nofSteps = 0;
 
   /// Fetch steps from the health plugin and show them in the app.
-  Future<void> fetchStepData() async {
-    int? steps;
-
+  Future<Map<String, int>> fetchStepData(
+    DateTime startDay,
+    DateTime endDay,
+  ) async {
     // get steps for today (i.e., since midnight)
-    final now = DateTime.now();
-    final end = DateTime(now.year, now.month + 1).subtract(Duration(days: 1));
+    // final now = DateTime.now();
+    // final end = DateTime(now.year, now.month + 1).subtract(Duration(days: 1));
 
     bool stepsPermission =
         await health.hasPermissions([HealthDataType.STEPS]) ?? false;
@@ -620,10 +625,15 @@ class HealthService {
         HealthDataType.STEPS,
       ]);
     }
-    if (!stepsPermission) return;
+    if (!stepsPermission) return {};
 
-    for (var i = 1; i < end.day + 1; i++) {
-      final today = DateTime(now.year, now.month, i);
+    Map<String, int> result = {};
+    for (var i = -1; i <= 30; i++) {
+      int? steps;
+      final today = DateTime(endDay.year, endDay.month, endDay.day - i);
+
+      final day = DateFormat('yyyy-MM-dd').format(today);
+      result.putIfAbsent(day, () => 0);
 
       final startTime = DateTime(today.year, today.month, today.day, 0);
       final endTime = DateTime(today.year, today.month, today.day, 23, 59);
@@ -634,11 +644,102 @@ class HealthService {
           includeManualEntry:
               !recordingMethodsToFilter.contains(RecordingMethod.manual),
         );
-      } catch (error) {
-        debugPrint("Exception in getTotalStepsInInterval: $error");
-      }
-
-      debugPrint('Total number of steps: $steps');
+        result[day] = steps ?? 0;
+      } catch (error) {}
     }
+    return result;
+  }
+
+  //
+  Future<Map<String, HealthDayData>> fetchAndStoreMonthlyHealthData(
+    String userId,
+  ) async {
+    final now = DateTime.now();
+    final thirtyDaysAgo = now.subtract(Duration(days: 30));
+
+    final types = [
+      // HealthDataType.STEPS,
+      HealthDataType.DIETARY_PROTEIN_CONSUMED,
+      HealthDataType.DIETARY_FATS_CONSUMED,
+      HealthDataType.DIETARY_CARBS_CONSUMED,
+      HealthDataType.WEIGHT,
+      HealthDataType.ACTIVE_ENERGY_BURNED,
+    ];
+
+    final permissions = types.map((e) => HealthDataAccess.READ).toList();
+
+    // 권한 요청
+    final isAuthorized = await health.requestAuthorization(
+      types,
+      permissions: permissions,
+    );
+    if (!isAuthorized) {
+      print("❌ 건강 데이터 권한 요청 실패");
+      return {};
+    }
+
+    // 데이터 가져오기
+    final data = await health.getHealthDataFromTypes(
+      types: types,
+      startTime: thirtyDaysAgo,
+      endTime: now,
+    );
+
+    if (data.isEmpty) {
+      print("❗️건강 데이터 없음");
+      return {};
+    }
+    Map<String, HealthDayData> grouped = {};
+
+    for (int i = 0; i < 30; i++) {
+      final date = now.subtract(Duration(days: i));
+      final key = DateFormat('yyyy-MM-dd').format(date);
+      grouped[key] = HealthDayData(date: key, steps: 0, calories: 0, weight: 0);
+    }
+    var stepsPerDay = await fetchStepData(thirtyDaysAgo, now);
+
+    // 날짜별 그룹화
+
+    for (var d in data) {
+      final day = DateFormat('yyyy-MM-dd').format(d.dateFrom);
+      final value = (d.value as NumericHealthValue).numericValue;
+
+      // grouped.putIfAbsent(
+      //   day,
+      //   () => HealthDayData(date: day, steps: 0, weight: 0, calories: 0),
+      // );
+
+      switch (d.type) {
+        case HealthDataType.WEIGHT:
+          grouped[day] = grouped[day]!.copyWith(weight: value.toDouble());
+          break;
+        case HealthDataType.DIETARY_PROTEIN_CONSUMED:
+        case HealthDataType.DIETARY_FATS_CONSUMED:
+        case HealthDataType.DIETARY_CARBS_CONSUMED:
+          grouped[day] = grouped[day]!.copyWith(
+            calories: grouped[day]!.calories + value,
+          );
+          break;
+        default:
+          break;
+      }
+    }
+
+    for (var entry in stepsPerDay.entries) {
+      if (grouped[entry.key] == null) continue;
+      grouped[entry.key] = grouped[entry.key]!.copyWith(steps: entry.value);
+    }
+
+    //  final batch = FirebaseFirestore.instance.batch();
+    //   final ref = FirebaseFirestore.instance.collection('users').doc(userId).collection('health_data');
+
+    //   grouped.forEach((date, healthData) {
+    //     final docRef = ref.doc(date); // yyyy-MM-dd 형식으로 문서 ID 설정
+    //     batch.set(docRef, healthData.toMap(), SetOptions(merge: true));
+    //   });
+
+    //   await batch.commit();
+
+    return grouped;
   }
 }
