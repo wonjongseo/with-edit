@@ -455,6 +455,7 @@ class HealthAppState extends State<HealthApp> {
     final earlier = now.subtract(const Duration(hours: 24));
 
     bool success = true;
+
     for (HealthDataType type in types) {
       success &= await health.delete(
         type: type,

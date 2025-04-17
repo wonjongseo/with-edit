@@ -1,8 +1,10 @@
 import 'package:get/get.dart';
+import 'package:health/health.dart';
 import 'package:intl/intl.dart';
 import 'package:with_diet/core/enums/handle_day_type.dart';
 
 import 'package:with_diet/service/health_service.dart';
+import 'package:with_diet/views/test.dart';
 
 class HealthDayData {
   final String date; // yyyy-MM-dd
@@ -79,10 +81,15 @@ class DataController extends GetxController {
         ).format(selectedDay.subtract(Duration(days: 1)))];
   }
 
-  void loadHealthData() async {
+  Future<void> loadHealthData() async {
     healthDayDate = await healthService.fetchAndStoreMonthlyHealthData('');
 
     getTodayAndYesterHealthData();
     update();
+  }
+
+  Future<void> deleteaa(HealthDataPoint healthDataPoint) async {
+    await healthService.deleteByUuid(healthDataPoint);
+    await loadHealthData();
   }
 }

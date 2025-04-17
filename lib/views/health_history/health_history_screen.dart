@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:get/utils.dart';
 import 'package:health/health.dart';
+import 'package:with_diet/controller/data_controller.dart';
 import 'package:with_diet/core/admob/global_banner_admob.dart';
 
 import 'package:with_diet/core/enums/home_graph_type.dart';
@@ -31,9 +32,7 @@ class _HealthHistoryScreenState extends State<HealthHistoryScreen> {
   @override
   void initState() {
     super.initState();
-    print('widget.dateTime : ${widget.dateTime}');
 
-    dateTime = widget.dateTime;
     getHeal();
   }
 
@@ -71,8 +70,8 @@ class _HealthHistoryScreenState extends State<HealthHistoryScreen> {
             SizedBox(height: 8),
             CustomButton(
               label: '등록',
-              onTap: () {
-                Get.to(
+              onTap: () async {
+                await Get.to(
                   () => EditHealthDataScreen(),
                   binding: BindingsBuilder.put(
                     () => EditHealthDataController(
@@ -81,6 +80,7 @@ class _HealthHistoryScreenState extends State<HealthHistoryScreen> {
                     ),
                   ),
                 );
+                getHeal();
               },
             ),
           ],
@@ -144,7 +144,22 @@ class _HealthHistoryScreenState extends State<HealthHistoryScreen> {
           );
         }
 
-        return TaskTile(healthDataPoint: p);
+        return TaskTile(
+          healthDataPoint: p,
+          onTap: () async {
+            await Get.find<DataController>().deleteaa(p);
+            getHeal();
+            // Get.to(
+            //   () => EditHealthDataScreen(),
+            //   binding: BindingsBuilder.put(
+            //     () => EditHealthDataController(
+            //       type: widget.type,
+            //       healthDataPoint: p,
+            //     ),
+            //   ),
+            // );
+          },
+        );
         // return Column(
         //   children: [
         //     Text(p.sourceDeviceId),

@@ -33,7 +33,7 @@ class CustomTextFormField extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       decoration: BoxDecoration(
-        border: Border.all(color: Colors.grey, width: 1.0),
+        border: Border.all(color: Colors.black54, width: 1.0),
         borderRadius: BorderRadius.circular(12),
       ),
       child: Row(
@@ -46,12 +46,10 @@ class CustomTextFormField extends StatelessWidget {
               onFieldSubmitted: onFieldSubmitted,
               onTap: onTap,
               readOnly: readOnly ?? false,
-
-              style: const TextStyle(fontSize: 12),
               maxLines: maxLines ?? 1,
               controller: controller,
               decoration: InputDecoration(
-                hintStyle: hintStyle ?? TextStyle(color: Colors.black),
+                hintStyle: TextStyle(color: Colors.black, fontSize: 16),
                 counterText: "",
                 prefixIconConstraints: const BoxConstraints(
                   minHeight: 0,

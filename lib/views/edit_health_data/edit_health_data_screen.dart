@@ -13,17 +13,14 @@ import 'package:with_diet/core/widgets/custom_button.dart';
 import 'package:with_diet/core/widgets/custom_text_form_field.dart';
 import 'package:with_diet/views/edit_health_data/edit_health_data_controller.dart';
 
-class EditHealthDataScreen extends StatelessWidget {
+class EditHealthDataScreen extends GetView<EditHealthDataController> {
   const EditHealthDataScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
     final GlobalKey dropdownKey = GlobalKey();
     final GlobalKey dropdownKey2 = GlobalKey();
-    EditHealthDataController controller = Get.find<EditHealthDataController>();
-    // EditHealthDataController controller = Get.put(
-    //   EditHealthDataController(type: type),
-    // );
+
     Size size = MediaQuery.of(context).size;
     return GestureDetector(
       onTap: () {
@@ -46,7 +43,7 @@ class EditHealthDataScreen extends StatelessWidget {
         ),
         body: SafeArea(
           child: SingleChildScrollView(
-            padding: EdgeInsets.symmetric(vertical: 8, horizontal: 16),
+            padding: EdgeInsets.symmetric(vertical: 8, horizontal: 28),
             child: GetBuilder<EditHealthDataController>(
               builder: (controller) {
                 return Column(
@@ -81,7 +78,7 @@ class EditHealthDataScreen extends StatelessWidget {
 
                     if (controller.selectedHealthType ==
                         HomeGraphType.calory) ...[
-                      SizedBox(height: 16),
+                      SizedBox(height: 12),
                       CustomTextFormField(
                         hintText:
                             controller.selectedCaloryType == null
@@ -108,7 +105,7 @@ class EditHealthDataScreen extends StatelessWidget {
                         ),
                       ),
                     ],
-                    SizedBox(height: 16),
+                    SizedBox(height: 12),
                     CustomTextFormField(
                       readOnly: true,
                       hintText: DateFormat.yMEd(
@@ -123,7 +120,7 @@ class EditHealthDataScreen extends StatelessWidget {
                       ),
                     ),
 
-                    SizedBox(height: 16),
+                    SizedBox(height: 12),
 
                     CustomTextFormField(
                       // autofocus: true,

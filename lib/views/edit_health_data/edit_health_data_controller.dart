@@ -24,7 +24,29 @@ class EditHealthDataController extends GetxController {
     super.onInit();
   }
 
-  void setHealthDataPoint() {}
+  void setHealthDataPoint() {
+    // 데이터 수정 화면일 경우 기존 데이터 표시
+    teCtl.text = healthDataPoint?.value?.toString() ?? '';
+    selectedDateTime = healthDataPoint?.dateFrom ?? selectedDateTime;
+    selectedHealthType = _mapTypeToGraphType(healthDataPoint?.type);
+    update();
+  }
+
+  HomeGraphType? _mapTypeToGraphType(HealthDataType? type) {
+    if (type == null) return null;
+    switch (type) {
+      case HealthDataType.STEPS:
+        return HomeGraphType.step;
+      case HealthDataType.WEIGHT:
+        return HomeGraphType.weight;
+      case HealthDataType.DIETARY_CARBS_CONSUMED:
+      case HealthDataType.DIETARY_PROTEIN_CONSUMED:
+      case HealthDataType.DIETARY_FATS_CONSUMED:
+        return HomeGraphType.calory;
+      default:
+        return null;
+    }
+  }
 
   HealthDataPoint? healthDataPoint;
   HealthService _healthService = HealthService();

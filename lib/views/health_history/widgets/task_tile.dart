@@ -7,8 +7,13 @@ import 'package:with_diet/views/edit_health_data/edit_health_data_controller.dar
 import 'package:with_diet/views/edit_health_data/edit_health_data_screen.dart';
 
 class TaskTile extends StatelessWidget {
-  const TaskTile({super.key, required this.healthDataPoint});
+  const TaskTile({
+    super.key,
+    required this.healthDataPoint,
+    required this.onTap,
+  });
   final HealthDataPoint healthDataPoint;
+  final Function() onTap;
 
   @override
   Widget build(BuildContext context) {
@@ -20,14 +25,7 @@ class TaskTile extends StatelessWidget {
           (healthDataPoint.value as NumericHealthValue).numericValue.toInt();
     }
     return GestureDetector(
-      onTap: () {
-        Get.to(
-          () => EditHealthDataScreen(),
-          binding: BindingsBuilder.put(
-            () => EditHealthDataController(healthDataPoint: healthDataPoint),
-          ),
-        );
-      },
+      onTap: onTap,
       child: Container(
         padding: EdgeInsets.symmetric(horizontal: 20),
         width: MediaQuery.of(context).size.width,

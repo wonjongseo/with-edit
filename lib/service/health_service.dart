@@ -32,6 +32,20 @@ class HealthService {
   List<HealthDataPoint> _healthDataList = [];
   List<RecordingMethod> recordingMethodsToFilter = [];
 
+  Future<void> deleteByUuid(HealthDataPoint healthDataPoint) async {
+    try {
+      print('healthDataPoint.uuid : ${healthDataPoint.uuid}');
+
+      bool result = await health.deleteByUUID(
+        uuid: healthDataPoint.uuid,
+        type: healthDataPoint.type,
+      );
+      print('result : ${result}');
+    } catch (e) {
+      print('e.toString : ${e.toString()}');
+    }
+  }
+
   Future<Map<DateTime, int>> fetchHourlySteps() async {
     final types = [HealthDataType.STEPS];
 
@@ -533,6 +547,39 @@ class HealthService {
 
       return healthDatas;
     } catch (e) {
+      print('e : ${e}');
+
+      rethrow;
+    }
+  }
+
+  Future<Map<HealthDataType, List<HealthDataPoint>>> fetchDataByType2(
+    List<HealthDataType> types,
+  ) async {
+    try {
+      Map<HealthDataType, List<HealthDataPoint>> returnValue = {};
+      for (var type in types) {
+        returnValue[type] = [];
+      }
+      final now = DateTime.now();
+      final start = DateTime(now.year, now.month, 1);
+      // final end = DateTime(now.year, now.month, 3);
+      final end = DateTime(now.year, now.month + 1).subtract(Duration(days: 1));
+      List<HealthDataPoint> healthDatas = await health.getHealthDataFromTypes(
+        types: types,
+        startTime: DateTime(now.year, now.month, now.day, 0),
+        endTime: DateTime(now.year, now.month, now.day, 23),
+        recordingMethodsToFilter: recordingMethodsToFilter,
+      );
+      healthDatas.sort((a, b) => b.dateTo.compareTo(a.dateTo));
+
+      for (var healthData in healthDatas) {
+        returnValue[healthData.type]!.add(healthData);
+      }
+      return returnValue;
+    } catch (e) {
+      print('e : ${e}');
+
       rethrow;
     }
   }
@@ -689,28 +736,26 @@ class HealthService {
       return {};
     }
     Map<String, HealthDayData> grouped = {};
-
+    Map<String, int> weightCountMap = {};
     for (int i = 0; i < 30; i++) {
       final date = now.subtract(Duration(days: i));
       final key = DateFormat('yyyy-MM-dd').format(date);
       grouped[key] = HealthDayData(date: key, steps: 0, calories: 0, weight: 0);
+      // weightCountMap[key] = 0;
     }
     var stepsPerDay = await fetchStepData(thirtyDaysAgo, now);
-
-    // 날짜별 그룹화
 
     for (var d in data) {
       final day = DateFormat('yyyy-MM-dd').format(d.dateFrom);
       final value = (d.value as NumericHealthValue).numericValue;
 
-      // grouped.putIfAbsent(
-      //   day,
-      //   () => HealthDayData(date: day, steps: 0, weight: 0, calories: 0),
-      // );
-
       switch (d.type) {
         case HealthDataType.WEIGHT:
-          grouped[day] = grouped[day]!.copyWith(weight: value.toDouble());
+          grouped[day] = grouped[day]!.copyWith(
+            weight: grouped[day]!.weight + value.toDouble(),
+          );
+          weightCountMap.putIfAbsent(day, () => 0);
+          weightCountMap[day] = weightCountMap[day]! + 1;
           break;
         case HealthDataType.DIETARY_PROTEIN_CONSUMED:
         case HealthDataType.DIETARY_FATS_CONSUMED:
@@ -724,20 +769,16 @@ class HealthService {
       }
     }
 
+    for (var entry in weightCountMap.entries) {
+      if (grouped[entry.key] == null) continue;
+      grouped[entry.key] = grouped[entry.key]!.copyWith(
+        weight: (grouped[entry.key]!.weight / entry.value),
+      );
+    }
     for (var entry in stepsPerDay.entries) {
       if (grouped[entry.key] == null) continue;
       grouped[entry.key] = grouped[entry.key]!.copyWith(steps: entry.value);
     }
-
-    //  final batch = FirebaseFirestore.instance.batch();
-    //   final ref = FirebaseFirestore.instance.collection('users').doc(userId).collection('health_data');
-
-    //   grouped.forEach((date, healthData) {
-    //     final docRef = ref.doc(date); // yyyy-MM-dd 형식으로 문서 ID 설정
-    //     batch.set(docRef, healthData.toMap(), SetOptions(merge: true));
-    //   });
-
-    //   await batch.commit();
 
     return grouped;
   }
